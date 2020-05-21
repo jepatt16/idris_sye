@@ -1,36 +1,38 @@
+-- definition and execution of a limited instruction set
 import Data.Vect
 import deceq_state
 
+-- operations (esp. comparisons) are very limited but easily extensible
 data BinOp = Add | Sub | Mul | Div
-
 data CBOp = CBZ | CBNZ | BL
 
--- TODO: Use types to make sure register
--- numbers are less than 32
+-- TODO: Use types to make sure register numbers are less than 32
 -- Update: I think I've accomplished this with the Fin class
 Register : Type
 Register = Fin 32
 
-data Instruction = R BinOp Register Register Register |
-                   I BinOp Int Register Register |
-                   B String |
-                   CB CBOp String Register |
+--  instruction definitions
+data Instruction = R BinOp Register Register Register | -- register arithmetic
+                   I BinOp Int Register Register | -- immediate arithmetic
+                   B String | -- unconditional branch
+                   CB CBOp String Register | -- conditional branch
                    MOVI Int Register |
                    MOV Register Register |
-                   CMP Register Register|
+                   CMP Register Register| -- set comparison flag as an integer
                    L String -- pseudoinstruction for labels
 
+
+-- TODO: prove that the following are "the same"
+-- Example 1:
 -- MOVI 5 3
 -- R Sub 1 3 4
 
+-- Example 2:
 -- MOVI -5 3
 -- R Add 1 3 4
 
--- ^ prove that they're the same
 
-
-
--- ensures that labels can be search for within a program
+-- implementing equality ensures that labels can be searched for within a program
 Eq Instruction where
   (L l1) == (L l2) = l1 == l2
   _ == _ = False
@@ -77,13 +79,7 @@ factorial_test = [
 initial_state : MachineState
 initial_state = St 0 (replicate 32 0) 0
 
-binop_exec : BinOp -> Int -> Int -> Int
-binop_exec Add rm rn = rm + rn
-binop_exec Sub rm rn = rm - rn
-binop_exec Mul rm rn = rm * rn
-binop_exec Div rm rn = rm `div` rn
-
-
+-- helper
 
 -- one step of execution
 -- TODO: branch with link
@@ -98,9 +94,10 @@ execute' (St pc regs flags) prog = case cur of
     cur : Maybe Instruction
     cur = index' pc prog
 
+    -- look for the label in the list of instructions and jump to it
     branch : String -> MachineState
     branch label' = case elemIndex (L label') prog of
-        Nothing => Failed -- good spot for Failed state to be an error message
+        Nothing => Failed -- good spot for Failed state to include an error message
         Just pc' => St pc' regs flags
 
     condbranch : CBOp -> String -> Register -> MachineState
@@ -112,6 +109,13 @@ execute' (St pc regs flags) prog = case cur of
         satisfied CBZ rt'' = (index rt'' regs) == 0
         satisfied CBNZ rt'' = (index rt'' regs) /= 0
         satisfied BL _ = flags < 0
+
+    -- little helper for binary ops
+    binop_exec : BinOp -> Int -> Int -> Int
+    binop_exec Add rm rn = rm + rn
+    binop_exec Sub rm rn = rm - rn
+    binop_exec Mul rm rn = rm * rn
+    binop_exec Div rm rn = rm `div` rn
 
     -- simple (non-branch) executions
     exec : MachineState -> Instruction -> MachineState

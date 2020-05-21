@@ -1,3 +1,5 @@
+-- this module defines a state in the machine,
+-- and shows that equality between two states is a decidable property
 module deceq_state
 
 -- attempting to show equality between two MachineStates
@@ -9,7 +11,7 @@ import Data.Vect
 -- type synonyms
 -- TODO: ensure that the PC is within the length of the program
 -- update: maybe nevermind? b/c detecting program temination
--- depends on the pc being greater than the length f the program
+-- depends on the pc being greater than the length of the program
 -- sized values?
 public export
 PC : Type
@@ -24,7 +26,8 @@ Flags = Int
 -- A state has a program counter, a vector of 32 integer registers,
 -- and an additional int for comparison flags
 -- included a failed state to reduce clutter of Maybes
--- failed state could be expanded for more detailed error reporting.
+-- failed state could be expanded for more detailed error reporting
+-- (ie make the constructor take a string for an error message).
 -- also thinking about having the Terminated state return what's in x0.
 -- currently the only possible runtime error is an unfound label
 
